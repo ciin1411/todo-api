@@ -3,6 +3,7 @@ import tasks from "./data/mock.js";
 
 // app 변수를 통해 라우터 생성 가능해짐
 const app = express();
+app.use(express.json());
 
 /**
  * 서버에 get /hello 리퀘스트가 들어오면 (req, res) => {} callback 함수를 실행
@@ -46,4 +47,55 @@ app.get("/tasks", (req, res) => {
   }
   res.send(newTasks);
 });
+
+app.get("/tasks/:id", (req, res) => {
+  // URL파라미터는 기본적으로 문자열이기 때문에 숫자형으로 변환해줘야함
+  const id = Number(req.params.id);
+  const task = tasks.find((task) => task.id === id);
+  if (task) {
+    res.send(task);
+  } else {
+    res.status(404).send({ message: "Cannot find givend id" });
+  }
+});
+
+app.post("/tasks", (req, res) => {
+  const newTask = req.body;
+  const ids = tasks.map((task) => task.id);
+  newTask.id = Math.max(...ids) + 1;
+  newTask.isComplete = false;
+  newTask.createdAt = new Date();
+  newTask.updatedAt = new Date();
+
+  tasks.push(newTask);
+  res.status(201).send(newTask);
+});
+
+app.patch("/tasks/:id", (req, res) => {
+  const id = Number(req.params.id);
+  const task = tasks.find((task) => task.id === id);
+  if (task) {
+    Object.keys(req.body).forEach((key) => {
+      task[key] = req.body[key];
+    });
+    task.updatedAt = new Date();
+    res.send(task);
+  } else {
+    res.status(404).send({ message: "Cannot find givend id" });
+  }
+});
+
+app.delete("/tasks/:id", (req, res) => {
+  // URL파라미터는 기본적으로 문자열이기 때문에 숫자형으로 변환해줘야함
+  const id = Number(req.params.id);
+  const idx = tasks.findIndex((task) => task.id === id);
+  if (idx >= 0) {
+    tasks.splice(idx, 1);
+    // index idx에서 시작해서 요소 한개를 지우라는 코드
+    res.sendStatus(204);
+  } else {
+    res.status(404).send({ message: "Cannot find givend id" });
+  }
+});
+
 app.listen(3000, () => console.log("Server Started"));
